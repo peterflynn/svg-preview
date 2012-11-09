@@ -30,9 +30,19 @@ define(function (require, exports, module) {
     // Brackets modules
     var DocumentManager         = brackets.getModule("document/DocumentManager"),
         EditorManager           = brackets.getModule("editor/EditorManager"),
-        InlineWidget            = brackets.getModule("editor/InlineWidget").InlineWidget,
         ExtensionUtils          = brackets.getModule("utils/ExtensionUtils");
     
+    // TODO: single shared panel instance
+//    var $svgPanel;
+    
+    
+    function setPanelHeight(panel, height) {
+        if (height !== panel.lastHeight) {
+            panel.$htmlContent.height(height);
+            panel.lastHeight = height;
+            EditorManager.resizeEditor();
+        }
+    }
     
     /**
      */
@@ -57,16 +67,12 @@ define(function (require, exports, module) {
         var viewHeight = svgHeight * panel.zoomFactor;
         
         // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 resolved wontfix: "we don't support SVG")
-//        $svgRoot.attr("viewBox", "0 0 " + svgWidth + " " + svgHeight);
         $svgRoot[0].setAttribute("viewBox", "0 0 " + svgWidth + " " + svgHeight);
         $svgRoot.attr("width", viewWidth);
         $svgRoot.attr("height", viewHeight);
         
         var desiredPanelHeight = $(".svg-toolbar", panel.$htmlContent).outerHeight() + viewHeight + (15 * 2);
-        if (desiredPanelHeight !== panel.height) {
-            panel.editor.setInlineWidgetHeight(panel, desiredPanelHeight, false);
-            panel.height = desiredPanelHeight;
-        }
+        setPanelHeight(panel, desiredPanelHeight);
         
         $svgParent.width(viewWidth);
         $svgParent.height(viewHeight);
@@ -76,17 +82,17 @@ define(function (require, exports, module) {
     function createToolbar(panel, $svgToolbar) {
         var html = "";
         
-        html += "<div class='svg-bgswatch checker'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:white'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#EEEEEE'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#C0C0C0'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#808080'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#404040'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:black'></div>";
+        html += "<div class='svg-bgswatch checker' title='Checkerboard'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:white' title='FF'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#EEEEEE' title='EE'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#C0C0C0' title='C0'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#808080' title='80'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#404040' title='40'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:black' title='00'></div>";
         
-        html += "<div class='svg-tb-button' data-zoomFactor='2.0'><span class='svg-tb-label'>+</span></div>";
-        html += "<div class='svg-tb-button' data-zoomFactor='0.5'><span class='svg-tb-label'>-</span></div>";
-        html += "<div class='svg-tb-button'><span class='svg-tb-label'>0</span></div>";
+        html += "<div class='svg-tb-button' data-zoomFactor='2.0' title='Zoom in'><span class='svg-tb-label'>+</span></div>";
+        html += "<div class='svg-tb-button' data-zoomFactor='0.5' title='Zoom out'><span class='svg-tb-label'>-</span></div>";
+        html += "<div class='svg-tb-button'><span class='svg-tb-label' title='Restore zoom'>0</span></div>";
         
         $svgToolbar.html(html);
         
@@ -116,20 +122,20 @@ define(function (require, exports, module) {
      */
     function addPreviewToEditor(editor) {
         // Create panel
-        var panel = new InlineWidget();
+        var panel = {};
         
-        panel.load(editor);
-        panel.$htmlContent.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
-        panel.height = 100;  // arbitrary starting point
         panel.zoomFactor = 1; // start at 100%
+        panel.editor = editor;
+        editor.svgPanel = panel;
         
+        // Create panel contents
+        panel.$htmlContent = $("<div class='svg-panel inline-widget'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
+        panel.$htmlContent.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
         var $svgToolbar = $(".svg-toolbar", panel.$htmlContent);
         createToolbar(panel, $svgToolbar);
         
-        // Attach panel to editor
-        editor.svgPanel = panel;
-        panel.editor = editor;
-        editor.addInlineWidget({line: 0, ch: 0}, panel);
+        // Inject panel into UI
+        $("#editor-holder").before(panel.$htmlContent);
         
         // Update panel when text changes
         $(editor.document).on("change", function () {
@@ -138,24 +144,40 @@ define(function (require, exports, module) {
         updatePanel(panel, editor);
     }
     
+    
+    var lastEditor = null;
+    
     /**
      */
-    function handleActiveEditorChange(jqEvent, newEditor, oldEditor) {
-        if (newEditor && !newEditor.svgPanel) {
-            var ext = PathUtils.filenameExtension(newEditor.document.file.fullPath);
-            if (ext.toLowerCase() === ".svg") {
-                addPreviewToEditor(newEditor);
+    function handleCurrentEditorChange() {
+        var newEditor = EditorManager.getCurrentFullEditor();
+        
+        if (lastEditor && lastEditor.svgPanel && lastEditor !== newEditor) {
+            lastEditor.svgPanel.$htmlContent.hide();
+            EditorManager.resizeEditor();
+        }
+        
+        if (newEditor) {
+            if (newEditor.svgPanel) {
+                newEditor.svgPanel.$htmlContent.show();
+                EditorManager.resizeEditor();
+            } else {
+                var ext = PathUtils.filenameExtension(newEditor.document.file.fullPath);
+                if (ext.toLowerCase() === ".svg") {
+                    addPreviewToEditor(newEditor);
+                }
             }
         }
+        lastEditor = newEditor;
     }
     
 
     // Listen for editors to attach to
-    $(EditorManager).on("activeEditorChange", handleActiveEditorChange);
+    $(DocumentManager).on("currentDocumentChange", handleCurrentEditorChange);
     
     ExtensionUtils.loadStyleSheet(module, "svg-preview.css")
         .done(function () {
             // Don't pick up initially visible editor until our stylesheet is loaded
-            handleActiveEditorChange(null, EditorManager.getActiveEditor(), null);
+            handleCurrentEditorChange();
         });
 });
