@@ -32,15 +32,26 @@ define(function (require, exports, module) {
         EditorManager           = brackets.getModule("editor/EditorManager"),
         ExtensionUtils          = brackets.getModule("utils/ExtensionUtils");
     
+    // Extension's own modules
+    var XMLPathFinder           = require("XMLPathFinder");
+    
+    
+    /**
+     * Preview panel that appears above the editor area. Lazily created, so may be null if never shown yet.
+     * @type {?jQuery}
+     */
     var $svgPanel;
     
-    var lastEditor;
+    /** @type {?Editor} */
+    var currentEditor;
     
+    /** State of the panel for the currently viewed Document, or null if panel not currently shown
+     *  @type {?{zoomFactor:number}} */
     var currentState;
     
     
-    function setPanelHeight(height) {
-        if (height !== $svgPanel.lastHeight) {
+    function setPanelHeight(height, forceResize) {
+        if (height !== $svgPanel.lastHeight || forceResize) {
             $svgPanel.height(height);
             $svgPanel.lastHeight = height;
             EditorManager.resizeEditor();
@@ -48,13 +59,15 @@ define(function (require, exports, module) {
     }
     
     /**
+     * Re-renders the SVG preview in the panel, automatically sizing it (and the overall panel) to
+     * reflect the explicitly set size of the SVG content (modulo the current zoom).
      */
-    function updatePanel(editor) {
+    function updatePanel(editor, forceResize) {
         var $svgParent = $(".svg-preview", $svgPanel);
         $svgParent.html(editor.document.getText());
         var $svgRoot = $svgParent.children();
         
-        // Get natural size of the SVG
+        // Get size of the SVG image (which is always explicitly specified on root tag)
         var svgWidth, svgHeight;
         if ($svgRoot.attr("viewBox")) {
             var boundsStrs = $svgRoot.attr("viewBox").split(/[ ,]+/);
@@ -75,10 +88,42 @@ define(function (require, exports, module) {
         $svgRoot.attr("height", viewHeight);
         
         var desiredPanelHeight = $(".svg-toolbar", $svgPanel).outerHeight() + viewHeight + (15 * 2);
-        setPanelHeight(desiredPanelHeight);
+        setPanelHeight(desiredPanelHeight, forceResize);
         
         $svgParent.width(viewWidth);
         $svgParent.height(viewHeight);
+    }
+    
+    
+    /** Clicking in SVG content selects the corresponding tag in the code */
+    function handleSVGClick(event) {
+        // Generate ancestor chain of the clicked node
+        var nodeChain = [];
+        var node = event.target;
+        while (node && node !== event.currentTarget) {
+            nodeChain.unshift(node);
+            node = node.parentElement;
+        }
+//        console.log(nodeChain);
+        
+        // Generate nth-child lookup info
+        var chain = [];
+        var i;
+        nodeChain.forEach(function (node) {
+            var childIndex = $(node).index();
+            chain.push({ childIndex: childIndex, tagName: node.tagName });
+            
+//            console.log(node.tagName + ", child #" + childIndex);
+        });
+        
+        // Find that same tag in the code
+        var startOfOpenTag = XMLPathFinder.findTag(currentEditor, chain);
+        if (startOfOpenTag) {
+            // Select it
+            var lineNum = startOfOpenTag.pos.line;
+            var token = startOfOpenTag.token;
+            currentEditor.setSelection({line: lineNum, ch: token.start}, {line: lineNum, ch: token.end});
+        }
     }
     
     
@@ -127,13 +172,16 @@ define(function (require, exports, module) {
         $svgPanel.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
         var $svgToolbar = $(".svg-toolbar", $svgPanel);
         populateToolbar($svgToolbar);
+        
+        // Listeners other than toobar
+        $(".svg-preview", $svgPanel).click(handleSVGClick);
     }
     
     
     function handleDocumentChange(jqEvent, doc) {
         console.assert(EditorManager.getCurrentFullEditor() && EditorManager.getCurrentFullEditor().document === doc);
         
-        updatePanel(EditorManager.getCurrentFullEditor());
+        updatePanel(EditorManager.getCurrentFullEditor(), jqEvent === null);
     }
     
     /**
@@ -152,13 +200,14 @@ define(function (require, exports, module) {
         $(editor.document).on("change", handleDocumentChange);
         handleDocumentChange(null, editor.document);  // initial update (which sets panel size too)
         
-        lastEditor = editor;
+        currentEditor = editor;
     }
     
     function detachFromLastEditor() {
-        if (lastEditor) {
-            $(lastEditor.document).off("change", handleDocumentChange);
+        if (currentEditor) {
+            $(currentEditor.document).off("change", handleDocumentChange);
             currentState = null;
+            currentEditor = null;
         }
     }
     
