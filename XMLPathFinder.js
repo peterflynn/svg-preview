@@ -31,6 +31,11 @@ define(function (require, exports, module) {
     var TokenUtils              = brackets.getModule("utils/TokenUtils");
     
     
+    // DEBUG: convenient place to turn logging on/off
+    function _log() {
+//        console.log.apply(console, arguments);
+    }
+    
     /** Returns true if START token of open tag */
     function isOpenTag(token) {
         return token.className === "tag" && token.state.type === "openTag";
@@ -77,25 +82,25 @@ define(function (require, exports, module) {
         
         // We start at ch:1 becuase CM's token API's always ask for the char to the LEFT of the specified cursor pos; ch:0 thus implies out of bounds & always yields a null token
         var tokenIt = TokenUtils.getInitialContext(editor._codeMirror, {line: 0, ch: 1});
-//        console.log("INITIAL TOKEN:", tokenIt.token);
+        _log("INITIAL TOKEN:", tokenIt.token);
         
         
         // DEBUG: log info about the current token
-        function logt(extra) {
-//            var token = tokenIt.token;
-//            console.log("TOKEN: \"" + token.string + "\"", token, extra);
+        function _logt(extra) {
+            var token = tokenIt.token;
+            _log("TOKEN: \"" + token.string + "\"", token, extra);
         }
         
         /** Skips past all initial meta, whitespace & comment tokens. Stops on first tag token (which must be type openTag) */
         function skipMeta() {
-//            console.log("Moving to root tag openTag...");
+            _log("Moving to root tag openTag...");
             
             while (tokenIt.token.className !== "tag") {
                 var moved = TokenUtils.moveNextToken(tokenIt);
                 if (!moved) {
                     return false;
                 }
-                logt();
+                _logt();
             }
             return true;
         }
@@ -103,14 +108,14 @@ define(function (require, exports, module) {
         /** Skips to the ">" token at the end of current opening tag (assumes we're currently in an opening tag).
          *  The ">" token's context stack INCLUDES that tag, so getDepth() there == getDepth() on the tag's immediate children. */
         function gotoEndOfOpenTag() {
-//            console.log("gotoEndOfOpenTag() past open-tag '" + tokenIt.token.state.tagName + "'");
+            _log("gotoEndOfOpenTag() past open-tag '" + tokenIt.token.state.tagName + "'");
             
             do {
                 var moved = TokenUtils.moveNextToken(tokenIt);
                 if (!moved) {
                     return false;
                 }
-                logt();
+                _logt();
                 if (tokenIt.token.state.type === "selfclosetag") {
                     return false;   // self-closing tags have no children, so we have a sync problem if we hit one
                 }
@@ -121,7 +126,7 @@ define(function (require, exports, module) {
         /** Skips to the start of the next opening tag at the current nesting level */
         function gotoNextSiblingOpenTag() {
             var targetLevel = getDepth(tokenIt.token);
-//            console.log("gotoNextSiblingOpenTag() moving along level #" + targetLevel);
+            _log("gotoNextSiblingOpenTag() moving along level #" + targetLevel);
             
             var level;
             do {
@@ -130,7 +135,7 @@ define(function (require, exports, module) {
                     return false;
                 }
                 level = getDepth(tokenIt.token);
-                logt("level #" + level);
+                _logt("level #" + level);
                 if (level < targetLevel) { // we've reached end of level we started at, with no success finding any more open tags
                     return false;
                 }
@@ -140,7 +145,7 @@ define(function (require, exports, module) {
         
         
         skipMeta();
-//        console.log("START TOKEN:", tokenIt.token);
+        _log("START TOKEN:", tokenIt.token);
         console.assert(isOpenTag(tokenIt.token));
         console.assert(getTagName(tokenIt.token) === "svg");
         
@@ -149,7 +154,7 @@ define(function (require, exports, module) {
         while (curLevel < chain.length) {
             var childIndex = chain[curLevel].childIndex;
             var nChildrenSeen = 0;
-//            console.log("Looking for child #" + childIndex + ", a " + chain[curLevel].tagName);
+            _log("Looking for child #" + childIndex + ", a " + chain[curLevel].tagName);
             
             // tokenIt is currently on the start of the parent tag - move to the end so we can start counting through its children
             gotoEndOfOpenTag();
@@ -163,10 +168,10 @@ define(function (require, exports, module) {
                 }
                 if (isOpenTag(tokenIt.token)) {
                     nChildrenSeen++;
-//                    console.log("Found some child tag. nChildrenSeen -> " + nChildrenSeen);
+                    _log("Found some child tag. nChildrenSeen -> " + nChildrenSeen);
                 }
             }
-//            console.log("Found THE child tag, #" + childIndex);
+            _log("Found THE child tag, #" + childIndex);
             
             if (getTagName(tokenIt.token) !== chain[curLevel].tagName) {
                 console.error("SVG code in editor is out of sync with SVG DOM in preview. Child #" + childIndex + " of " + chain[curLevel - 1].tagName + ": expected " + chain[curLevel].tagName + " but found " + getTagName(tokenIt.token));

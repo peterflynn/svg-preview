@@ -97,14 +97,24 @@ define(function (require, exports, module) {
     
     /** Clicking in SVG content selects the corresponding tag in the code */
     function handleSVGClick(event) {
+        // Figure out what was clicked
+        var clickedNode = event.target;
+        if (clickedNode.correspondingUseElement) {
+            // If it's an instantiation of a <defs> item, let's target the <use> (aka the instance)
+            // (TODO: option to target the node inside <defs> instead, via correspondingElement)
+            clickedNode = clickedNode.correspondingUseElement;
+        }
+        
         // Generate ancestor chain of the clicked node
         var nodeChain = [];
-        var node = event.target;
-        while (node && node !== event.currentTarget) {
+        var svgRoot = event.currentTarget;
+        var node = clickedNode;
+        while (node && node !== svgRoot) {
             nodeChain.unshift(node);
             node = node.parentElement;
         }
-//        console.log(nodeChain);
+//        console.log("CLICK on", event.target);
+//        console.log("nodeChain =", nodeChain);
         
         // Generate nth-child lookup info
         var chain = [];
