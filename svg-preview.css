@@ -11,15 +11,16 @@
     background-image: url("checkerboard.png");
     background-size: 8px;
 }
+
 .svg-toolbar {
     background-color: #606060;
     height: 29px;
 }
 .svg-tb-button, .svg-bgswatch {
     display: inline-block;
-    width: 16px; height: 16px;
-    margin: 5px 2px;
-    border-radius: 4px;
+    width: 18px; height: 18px;
+    margin: 4px 3px;
+    border-radius: 3px;
     border: 1px solid #808080;
     vertical-align: middle;
 }
@@ -32,7 +33,12 @@
     font-weight: bold;
     text-align: center;
 }
-.svg-tb-label {
-    position: absolute;
-    margin: auto;
+
+.svg-tb-icon, .zoomin-icon, .zoomout-icon, .zoom11-icon {
+    background-image: url("svg-preview-icons.svg");
+    background-repeat: no-repeat;
+    background-position: 0 0;
 }
+.zoomin-icon    { background-position: 0 0; }
+.zoomout-icon   { background-position: 0 -20px; }
+.zoom11-icon    { background-position: 0 -40px; }

@@ -67,12 +67,17 @@ define(function (require, exports, module) {
         $svgParent.html(editor.document.getText());
         var $svgRoot = $svgParent.children();
         
+        if (!$svgRoot.length) {  // empty document
+            return;
+        }
+        
         // Get size of the SVG image (which is always explicitly specified on root tag)
         var svgWidth, svgHeight;
-        if ($svgRoot.attr("viewBox")) {
-            var boundsStrs = $svgRoot.attr("viewBox").split(/[ ,]+/);
+        var viewBoxAttr = $svgRoot[0].getAttribute("viewBox"); // jQ can't read this attr - see below
+        if (viewBoxAttr) {
+            var boundsStrs = viewBoxAttr.split(/[ ,]+/);
             svgWidth = parseFloat(boundsStrs[2]);
-            svgHeight = parseFloat(boundsStrs[2]);
+            svgHeight = parseFloat(boundsStrs[3]);
         } else {
             svgWidth = parseInt($svgRoot.attr("width"), 10);
             svgHeight = parseInt($svgRoot.attr("height"), 10);
@@ -141,16 +146,16 @@ define(function (require, exports, module) {
         var html = "";
         
         html += "<div class='svg-bgswatch checker' title='Checkerboard'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:white' title='FF'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#EEEEEE' title='EE'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#C0C0C0' title='C0'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#808080' title='80'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:#404040' title='40'></div>";
-        html += "<div class='svg-bgswatch' style='background-color:black' title='00'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:white' title='#FF'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#EEEEEE' title='#EE'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#C0C0C0' title='#C0'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#808080' title='#80'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:#404040' title='#40'></div>";
+        html += "<div class='svg-bgswatch' style='background-color:black' title='#00'></div>";
         
-        html += "<div class='svg-tb-button' data-zoomFactor='2.0' title='Zoom in'><span class='svg-tb-label'>+</span></div>";
-        html += "<div class='svg-tb-button' data-zoomFactor='0.5' title='Zoom out'><span class='svg-tb-label'>-</span></div>";
-        html += "<div class='svg-tb-button'><span class='svg-tb-label' title='Restore zoom'>0</span></div>";
+        html += "<div class='svg-tb-button zoomin-icon' data-zoomFactor='2.0' title='Zoom in'></div>";
+        html += "<div class='svg-tb-button zoomout-icon' data-zoomFactor='0.5' title='Zoom out'></div>";
+        html += "<div class='svg-tb-button zoom11-icon' title='Restore zoom'></div>";
         
         $svgToolbar.html(html);
         
