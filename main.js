@@ -137,7 +137,8 @@ define(function (require, exports, module) {
             // Select it
             var lineNum = startOfOpenTag.pos.line;
             var token = startOfOpenTag.token;
-            currentEditor.setSelection({line: lineNum, ch: token.start}, {line: lineNum, ch: token.end});
+            currentEditor.setSelection({line: lineNum, ch: token.start}, {line: lineNum, ch: token.end}, true);
+            // ('true' flag for centering on selection is ignored < sprint 20)
         }
     }
     
