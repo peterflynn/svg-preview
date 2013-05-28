@@ -1,6 +1,8 @@
 {
     "name": "pflynn.svg.preview",
     "title": "SVG Preview",
+    "homepage": "https://github.com/peterflynn/svg-preview",
+    "author": "Peter Flynn",
     "version": "1.1.0",
     "engines": { "brackets": ">=0.14" },
     "description": "Live preview SVG files in an inline panel while you edit them."
