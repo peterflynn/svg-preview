@@ -22,7 +22,7 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50, regexp: true */
-/*global define, brackets, $, PathUtils */
+/*global define, brackets, $ */
 
 define(function (require, exports, module) {
     "use strict";
@@ -30,11 +30,17 @@ define(function (require, exports, module) {
     // Brackets modules
     var DocumentManager         = brackets.getModule("document/DocumentManager"),
         EditorManager           = brackets.getModule("editor/EditorManager"),
+        FileUtils               = brackets.getModule("file/FileUtils"),
         ExtensionUtils          = brackets.getModule("utils/ExtensionUtils");
     
     // Extension's own modules
     var XMLPathFinder           = require("XMLPathFinder");
     
+    
+    // TODO:
+    //  - source->image linkage -- blink element in SVG (if Live Highlight is toggled on)
+    //      - blink element's fill red/normal/red/normal a few times when cursor enters its text bounds
+    //      - (during NON-EDIT cursor movement only... how to detect??)
     
     /**
      * Preview panel that appears above the editor area. Lazily created, so may be null if never shown yet.
@@ -169,7 +175,10 @@ define(function (require, exports, module) {
                 $svgParent.removeClass("checker");
                 $svgParent.css("background-color", $elt.css("background-color"));
             }
-        });
+        })
+            .mousedown(function (event) {
+                event.preventDefault();  // don't steal focus
+            });
         
         $(".svg-tb-button", $svgToolbar).click(function (event) {
             var zoomFactor = $(event.currentTarget).attr("data-zoomFactor");
@@ -179,7 +188,10 @@ define(function (require, exports, module) {
                 currentState.zoomFactor *= zoomFactor;
             }
             updatePanel(EditorManager.getCurrentFullEditor());
-        });
+        })
+            .mousedown(function (event) {
+                event.preventDefault();  // don't steal focus
+            });
     }
     
     function createSVGPanel() {
@@ -232,7 +244,9 @@ define(function (require, exports, module) {
             createSVGPanel();
             
             // Inject panel into UI
+            // TODO: use PanelManager to create top panel, once possible
             $("#editor-holder").before($svgPanel);
+            
         } else if ($svgPanel.is(":hidden")) {
             $svgPanel.show();
         }
@@ -255,7 +269,7 @@ define(function (require, exports, module) {
         
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
-            var ext = PathUtils.filenameExtension(newEditor.document.file.fullPath);
+            var ext = FileUtils.getFilenameExtension(newEditor.document.file.fullPath);
             if (ext.toLowerCase() === ".svg") {
                 showSVGPanel(newEditor);
             } else {
