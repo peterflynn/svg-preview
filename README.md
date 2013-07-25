@@ -1,18 +1,18 @@
 SVG Preview for Brackets
 ========================
-Add an inline live preview panel when viewing SVG files. The preview updates in real time as you type. Works great with [Everyscrub](https://github.com/peterflynn/everyscrub)!
+Adds an inline live preview panel when editing SVG files. The preview updates in real time as you type. Works great with [Everyscrub](https://github.com/peterflynn/everyscrub)!
 
-Click the swatches at top to choose a background color for the preview. Use the +/- buttons to zoom and the "0" button to reset to 100% scale.
+Click the swatches at top to choose a background color for the preview. Use the +/- buttons to zoom and the "1:1" button to reset to 100% scale.
 
 
 How to Install
 ==============
 SVG Preview is an extension for [Brackets](https://github.com/adobe/brackets/), a new open-source code editor for the web.
 
-To use SVG Preview:
+To install extensions:
 
-1. Choose _File > Install Extension_
-2. Enter this URL: _https://github.com/peterflynn/svg-preview_
+1. Choose _File > Extension Manager_ and select the _Available_ tab
+2. Search for this extension
 3. Click _Install_!
 
 
