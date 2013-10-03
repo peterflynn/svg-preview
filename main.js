@@ -262,6 +262,17 @@ define(function (require, exports, module) {
         }
     }
     
+    var isSVG;
+    if (FileUtils.getFileExtension) {  // Sprint 32+
+        isSVG = function (fullPath) {
+            return FileUtils.getFileExtension(fullPath).toLowerCase() === "svg";
+        };
+    } else {                           // Sprint 31 & earlier
+        isSVG = function (fullPath) {
+            return FileUtils.getFilenameExtension(fullPath).toLowerCase() === ".svg";
+        };
+    }
+    
     /**
      */
     function handleCurrentEditorChange() {
@@ -269,8 +280,7 @@ define(function (require, exports, module) {
         
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
-            var ext = FileUtils.getFilenameExtension(newEditor.document.file.fullPath);
-            if (ext.toLowerCase() === ".svg") {
+            if (isSVG(newEditor.document.file.fullPath)) {
                 showSVGPanel(newEditor);
             } else {
                 hideSVGPanel();
