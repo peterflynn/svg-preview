@@ -4,6 +4,8 @@ Adds an inline live preview panel when editing SVG files. The preview updates in
 
 Click the swatches at top to choose a background color for the preview. Use the +/- buttons to zoom and the "1:1" button to reset to 100% scale.
 
+Click any part of the SVG graphic to select the corresponding tag in the code.
+
 
 How to Install
 ==============

@@ -36,9 +36,10 @@ define(function (require, exports, module) {
 //        console.log.apply(console, arguments);
     }
     
-    /** Returns true if START token of open tag */
+    /** Returns true if name token of open tag (token after "<") */
     function isOpenTag(token) {
-        return token.className === "tag" && token.state.type === "openTag";
+        // Open tag is "tag" with tagName set; close tag is "tag" with tagName null or "tag bracket" with tagName null (if self-closing)
+        return token.type === "tag" && token.state.tagName;
     }
     
     function getTagName(token) {
@@ -93,9 +94,9 @@ define(function (require, exports, module) {
         
         /** Skips past all initial meta, whitespace & comment tokens. Stops on first tag token (which must be type openTag) */
         function skipMeta() {
-            _log("Moving to root tag openTag...");
+            _log("Moving to root tag openening tagname...");
             
-            while (tokenIt.token.className !== "tag") {
+            while (!isOpenTag(tokenIt.token)) {
                 var moved = TokenUtils.moveNextToken(tokenIt);
                 if (!moved) {
                     return false;
@@ -116,10 +117,10 @@ define(function (require, exports, module) {
                     return false;
                 }
                 _logt();
-                if (tokenIt.token.state.type === "selfclosetag") {
+                if (tokenIt.token.string === "/>") {
                     return false;   // self-closing tags have no children, so we have a sync problem if we hit one
                 }
-            } while (!(tokenIt.token.className === "tag" && tokenIt.token.state.type === "endTag"));
+            } while (tokenIt.token.type !== "tag bracket");
             return true;
         }
         

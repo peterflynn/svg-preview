@@ -30,6 +30,7 @@ define(function (require, exports, module) {
     // Brackets modules
     var DocumentManager         = brackets.getModule("document/DocumentManager"),
         EditorManager           = brackets.getModule("editor/EditorManager"),
+        WorkspaceManager        = brackets.getModule("view/WorkspaceManager"),
         FileUtils               = brackets.getModule("file/FileUtils"),
         ExtensionUtils          = brackets.getModule("utils/ExtensionUtils");
     
@@ -60,7 +61,7 @@ define(function (require, exports, module) {
         if (height !== $svgPanel.lastHeight || forceResize) {
             $svgPanel.height(height);
             $svgPanel.lastHeight = height;
-            EditorManager.resizeEditor();
+            WorkspaceManager.recomputeLayout();
         }
     }
     
@@ -175,10 +176,7 @@ define(function (require, exports, module) {
                 $svgParent.removeClass("checker");
                 $svgParent.css("background-color", $elt.css("background-color"));
             }
-        })
-            .mousedown(function (event) {
-                event.preventDefault();  // don't steal focus
-            });
+        });
         
         $(".svg-tb-button", $svgToolbar).click(function (event) {
             var zoomFactor = $(event.currentTarget).attr("data-zoomFactor");
@@ -188,15 +186,12 @@ define(function (require, exports, module) {
                 currentState.zoomFactor *= zoomFactor;
             }
             updatePanel(EditorManager.getCurrentFullEditor());
-        })
-            .mousedown(function (event) {
-                event.preventDefault();  // don't steal focus
-            });
+        });
     }
     
     function createSVGPanel() {
         // Create panel contents
-        $svgPanel = $("<div class='svg-panel inline-widget'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
+        $svgPanel = $("<div class='svg-panel inline-widget no-focus'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
         $svgPanel.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
         var $svgToolbar = $(".svg-toolbar", $svgPanel);
         populateToolbar($svgToolbar);
@@ -258,19 +253,12 @@ define(function (require, exports, module) {
     function hideSVGPanel() {
         if ($svgPanel && $svgPanel.is(":visible")) {
             $svgPanel.hide();
-            EditorManager.resizeEditor();
+            WorkspaceManager.recomputeLayout();
         }
     }
     
-    var isSVG;
-    if (FileUtils.getFileExtension) {  // Sprint 32+
-        isSVG = function (fullPath) {
-            return FileUtils.getFileExtension(fullPath).toLowerCase() === "svg";
-        };
-    } else {                           // Sprint 31 & earlier
-        isSVG = function (fullPath) {
-            return FileUtils.getFilenameExtension(fullPath).toLowerCase() === ".svg";
-        };
+    function isSVG(fullPath) {
+        return FileUtils.getFileExtension(fullPath).toLowerCase() === "svg";
     }
     
     /**
