@@ -122,9 +122,7 @@ define(function (require, exports, module) {
             }            
         }
         if (viewBoxAttr) {
-            console.log(viewBoxAttr);
             var bounds = viewBoxAttr.split(/[ ,]+/).map(parseFloat);
-            console.log(bounds);
             if (!svgWidth) {
                 svgWidth = svgHeight ? svgHeight * bounds[2] / bounds[3]
                             : bounds[2];
