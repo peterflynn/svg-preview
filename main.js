@@ -121,8 +121,10 @@ define(function (require, exports, module) {
                 svgHeight *= unitsToPixels[ unit[0] ];
             }            
         }
-        if ( (!(svgWidth && svgHeight)) && viewBoxAttr) {
-            var bounds = viewBoxAttr.split(/[ ,]+/).forEach(parseFloat);
+        if (viewBoxAttr) {
+            console.log(viewBoxAttr);
+            var bounds = viewBoxAttr.split(/[ ,]+/).map(parseFloat);
+            console.log(bounds);
             if (!svgWidth) {
                 svgWidth = svgHeight ? svgHeight * bounds[2] / bounds[3]
                             : bounds[2];
