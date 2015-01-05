@@ -36,6 +36,21 @@ define(function (require, exports, module) {
     // Extension's own modules
     var XMLPathFinder           = require("XMLPathFinder");
     
+    // Conversion factor for all CSS length units (other than percentage / viewport).  
+    // Just for estimation -- Makes assumptions about font metrics.
+    var unitsToPixels = {
+        cm : (96 / 2.54),
+        mm : (96 / 25.4),
+        "in" : 96,
+        px : 1,
+        pt : 96 / 72,
+        pc : 96 / 12,
+        em : 16,
+        ex : 8,
+        ch : 8,
+        rem : 16
+    };
+    
     
     // TODO:
     //  - source->image linkage -- blink element in SVG (if Live Highlight is toggled on)
@@ -71,21 +86,53 @@ define(function (require, exports, module) {
     
     function updateSize($svgParent, $svgRoot) {
         // Get size of the SVG image (which is always explicitly specified on root tag)
-        var svgWidth, svgHeight;
-        var viewBoxAttr = $svgRoot[0].getAttribute("viewBox"); // jQ can't read this attr - see below
-        if (viewBoxAttr) {
-            var boundsStrs = viewBoxAttr.split(/[ ,]+/);
-            svgWidth = parseFloat(boundsStrs[2]);
-            svgHeight = parseFloat(boundsStrs[3]);
-        } else {
-            svgWidth = parseInt($svgRoot.attr("width"), 10);
-            svgHeight = parseInt($svgRoot.attr("height"), 10);
+        // First option: Use explicit height and width (with units!) from file
+        // if either is not available, or if they use percentages, then
+        // Second option: Use viewBox width and height (in pixels) 
+        //                scaling by aspect ratio if one of width *or* height specified
+        // Third option: Use HTML5 default size (300px x 150px)
+        var svgWidth, svgHeight, unit;
+        var svgWidthAttr  = $svgRoot.attr("width");
+        var svgHeightAttr = $svgRoot.attr("height");
+        var viewBoxAttr   = $svgRoot[0].getAttribute("viewBox"); 
+                            // jQ can't read this attr - see below
+        if (svgWidthAttr) {
+            svgWidth = parseFloat(svgWidthAttr);
+            unit = svgWidthAttr.match(/[a-z%]+/);
+            if (unit) {
+                //Multiply by unit value in pixels.
+                //Will result in NaN if unit not supported,
+                //causing a fall-through to another sizing option
+                svgWidth *= unitsToPixels[ unit[0] ];
+            }
         }
+        if (svgHeightAttr) {
+            svgHeight = parseFloat(svgHeightAttr);
+            unit = svgHeightAttr.match(/[a-z%]+/);
+            if (unit) {
+                svgHeight *= unitsToPixels[ unit[0] ];
+            }            
+        }
+        if ( (!(svgWidth && svgHeight)) && viewBoxAttr) {
+            var bounds = viewBoxAttr.split(/[ ,]+/).forEach(parseFloat);
+            if (!svgWidth) {
+                svgWidth = svgHeight ? svgHeight * bounds[2] / bounds[3]
+                            : bounds[2];
+            }
+            if (!svgHeight) {
+                svgHeight = svgWidth ? svgWidth * bounds[3] / bounds[2]
+                            : bounds[3];
+            }
+        } 
+        // If either has not been defined, or is zero, set defaults:
+        svgWidth  = svgWidth  || 300;   
+        svgHeight = svgHeight || 150;
+        
         
         // Specify actual width consistent with zoom factor
         var viewWidth = svgWidth * currentState.zoomFactor;
         var viewHeight = svgHeight * currentState.zoomFactor;
-        
+
         // Clip to max of 2/3 window ht
         var maxHeight = $(".content").height() * 2 / 3;
         if (viewHeight > maxHeight) {
@@ -97,8 +144,11 @@ define(function (require, exports, module) {
         
         $(".svg-tb-label", $svgPanel).text((viewWidth / svgWidth) * 100 + "%");
         
-        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
-        $svgRoot[0].setAttribute("viewBox", "0 0 " + svgWidth + " " + svgHeight);
+        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 resolved wontfix: "we don't support SVG")
+        if (!viewBoxAttr) {
+            //create a viewBox to allow preview scaling
+            $svgRoot[0].setAttribute("viewBox", "0 0 " + svgWidth + " " + svgHeight);
+        }
         $svgRoot.attr("width", viewWidth);
         $svgRoot.attr("height", viewHeight);
         
