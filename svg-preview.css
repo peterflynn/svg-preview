@@ -1,0 +1,44 @@
+.svg-panel {
+    position: relative; /* positioning context for shadows */
+}
+.svg-panel .shadow.top {
+    top: 29px; /* place below toolbar */
+}
+.svg-preview {
+    box-shadow: 0 0 10px 2px rgba(0,0,0,0.25);
+}
+.checker {
+    background-image: url("checkerboard.png");
+    background-size: 8px;
+}
+
+.svg-toolbar {
+    background-color: #606060;
+    height: 29px;
+}
+.svg-tb-button, .svg-bgswatch {
+    display: inline-block;
+    width: 18px; height: 18px;
+    margin: 4px 3px;
+    border-radius: 3px;
+    border: 1px solid #808080;
+    vertical-align: middle;
+}
+.svg-tb-button:hover, .svg-bgswatch:hover {
+    border: 1px solid #aaaaaa;
+}
+.svg-tb-button {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.svg-tb-icon, .zoomin-icon, .zoomout-icon, .zoom11-icon {
+    background-image: url("svg-preview-icons.svg");
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+.zoomin-icon    { background-position: 0 0; }
+.zoomout-icon   { background-position: 0 -20px; }
+.zoom11-icon    { background-position: 0 -40px; }
