@@ -28,10 +28,9 @@ define(function (require, exports, module) {
     "use strict";
     
     // Brackets modules
-    var DocumentManager         = brackets.getModule("document/DocumentManager"),
+    var MainViewManager         = brackets.getModule("view/MainViewManager"),
         EditorManager           = brackets.getModule("editor/EditorManager"),
         WorkspaceManager        = brackets.getModule("view/WorkspaceManager"),
-        FileUtils               = brackets.getModule("file/FileUtils"),
         ExtensionUtils          = brackets.getModule("utils/ExtensionUtils");
     
     // Extension's own modules
@@ -130,7 +129,6 @@ define(function (require, exports, module) {
         
         // Generate nth-child lookup info
         var chain = [];
-        var i;
         nodeChain.forEach(function (node) {
             var childIndex = $(node).index();
             chain.push({ childIndex: childIndex, tagName: node.tagName });
@@ -145,7 +143,6 @@ define(function (require, exports, module) {
             var lineNum = startOfOpenTag.pos.line;
             var token = startOfOpenTag.token;
             currentEditor.setSelection({line: lineNum, ch: token.start}, {line: lineNum, ch: token.end}, true);
-            // ('true' flag for centering on selection is ignored < sprint 20)
         }
     }
     
@@ -220,7 +217,7 @@ define(function (require, exports, module) {
         currentState = editor.svgPanelState;
         
         // Update panel when text changes
-        $(editor.document).on("change", handleDocumentChange);
+        editor.document.on("change", handleDocumentChange);
         handleDocumentChange(null, editor.document);  // initial update (which sets panel size too)
         
         currentEditor = editor;
@@ -228,7 +225,7 @@ define(function (require, exports, module) {
     
     function detachFromLastEditor() {
         if (currentEditor) {
-            $(currentEditor.document).off("change", handleDocumentChange);
+            currentEditor.document.off("change", handleDocumentChange);
             currentState = null;
             currentEditor = null;
         }
@@ -257,10 +254,6 @@ define(function (require, exports, module) {
         }
     }
     
-    function isSVG(fullPath) {
-        return FileUtils.getFileExtension(fullPath).toLowerCase() === "svg";
-    }
-    
     /**
      */
     function handleCurrentEditorChange() {
@@ -268,7 +261,7 @@ define(function (require, exports, module) {
         
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
-            if (isSVG(newEditor.document.file.fullPath)) {
+            if (newEditor.document.getLanguage().getId() === "svg") {
                 showSVGPanel(newEditor);
             } else {
                 hideSVGPanel();
@@ -280,7 +273,7 @@ define(function (require, exports, module) {
     
 
     // Listen for editors to attach to
-    $(DocumentManager).on("currentDocumentChange", handleCurrentEditorChange);
+    MainViewManager.on("currentFileChange", handleCurrentEditorChange);
     
     ExtensionUtils.loadStyleSheet(module, "svg-preview.css")
         .done(function () {
