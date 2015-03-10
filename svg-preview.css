@@ -33,6 +33,14 @@
     font-weight: bold;
     text-align: center;
 }
+.svg-tb-button.disabled {
+    opacity: 0.5;
+}
+
+.svg-tb-label {
+    color: #A3A3A3;
+    vertical-align: middle;
+}
 
 .svg-tb-icon, .zoomin-icon, .zoomout-icon, .zoom11-icon {
     background-image: url("svg-preview-icons.svg");

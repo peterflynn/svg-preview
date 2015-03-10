@@ -48,6 +48,9 @@ define(function (require, exports, module) {
      */
     var $svgPanel;
     
+    /** @type {boolean}  True if panel has just been shown/hidden */
+    var needsWorkspaceLayout;
+    
     /** @type {?Editor} */
     var currentEditor;
     
@@ -56,27 +59,17 @@ define(function (require, exports, module) {
     var currentState;
     
     
-    function setPanelHeight(height, forceResize) {
-        if (height !== $svgPanel.lastHeight || forceResize) {
+    function setPanelHeight(height) {
+        if (height !== $svgPanel.lastHeight || needsWorkspaceLayout) {
             $svgPanel.height(height);
             $svgPanel.lastHeight = height;
+            
             WorkspaceManager.recomputeLayout();
+            needsWorkspaceLayout = false;
         }
     }
     
-    /**
-     * Re-renders the SVG preview in the panel, automatically sizing it (and the overall panel) to
-     * reflect the explicitly set size of the SVG content (modulo the current zoom).
-     */
-    function updatePanel(editor, forceResize) {
-        var $svgParent = $(".svg-preview", $svgPanel);
-        $svgParent.html(editor.document.getText());
-        var $svgRoot = $svgParent.children();
-        
-        if (!$svgRoot.length) {  // empty document
-            return;
-        }
-        
+    function updateSize($svgParent, $svgRoot) {
         // Get size of the SVG image (which is always explicitly specified on root tag)
         var svgWidth, svgHeight;
         var viewBoxAttr = $svgRoot[0].getAttribute("viewBox"); // jQ can't read this attr - see below
@@ -93,16 +86,44 @@ define(function (require, exports, module) {
         var viewWidth = svgWidth * currentState.zoomFactor;
         var viewHeight = svgHeight * currentState.zoomFactor;
         
-        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 resolved wontfix: "we don't support SVG")
+        // Clip to max of 2/3 window ht
+        var maxHeight = $(".content").height() * 2 / 3;
+        if (viewHeight > maxHeight) {
+            viewHeight = maxHeight;
+            viewWidth = maxHeight * svgWidth / svgHeight;
+        }
+        $(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
+        $(".svg-tb-button.zoomin-icon", $svgPanel).toggleClass("disabled", viewHeight * 2 > maxHeight);
+        
+        $(".svg-tb-label", $svgPanel).text((viewWidth / svgWidth) * 100 + "%");
+        
+        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
         $svgRoot[0].setAttribute("viewBox", "0 0 " + svgWidth + " " + svgHeight);
         $svgRoot.attr("width", viewWidth);
         $svgRoot.attr("height", viewHeight);
         
+        
         var desiredPanelHeight = $(".svg-toolbar", $svgPanel).outerHeight() + viewHeight + (15 * 2);
-        setPanelHeight(desiredPanelHeight, forceResize);
+        setPanelHeight(desiredPanelHeight);
         
         $svgParent.width(viewWidth);
         $svgParent.height(viewHeight);
+    }
+    
+    /**
+     * Re-renders the SVG preview in the panel, automatically sizing it (and the overall panel) to
+     * reflect the explicitly set size of the SVG content (modulo the current zoom).
+     */
+    function updatePanel(editor) {
+        var $svgParent = $(".svg-preview", $svgPanel);
+        $svgParent.html(editor.document.getText());
+        var $svgRoot = $svgParent.children();
+        
+        if (!$svgRoot.length) {  // empty document
+            return;
+        }
+        
+        updateSize($svgParent, $svgRoot);
     }
     
     
@@ -161,6 +182,7 @@ define(function (require, exports, module) {
         html += "<div class='svg-tb-button zoomin-icon' data-zoomFactor='2.0' title='Zoom in'></div>";
         html += "<div class='svg-tb-button zoomout-icon' data-zoomFactor='0.5' title='Zoom out'></div>";
         html += "<div class='svg-tb-button zoom11-icon' title='Restore zoom'></div>";
+        html += "<span class='svg-tb-label'></span>";
         
         $svgToolbar.html(html);
         
@@ -176,7 +198,10 @@ define(function (require, exports, module) {
         });
         
         $(".svg-tb-button", $svgToolbar).click(function (event) {
-            var zoomFactor = $(event.currentTarget).attr("data-zoomFactor");
+            var $btn = $(event.currentTarget);
+            if ($btn.is(".disabled")) { return; }
+            
+            var zoomFactor = $btn.attr("data-zoomFactor");
             if (isNaN(zoomFactor)) {
                 currentState.zoomFactor = 1;
             } else {
@@ -201,7 +226,7 @@ define(function (require, exports, module) {
     function handleDocumentChange(jqEvent, doc) {
         console.assert(EditorManager.getCurrentFullEditor() && EditorManager.getCurrentFullEditor().document === doc);
         
-        updatePanel(EditorManager.getCurrentFullEditor(), jqEvent === null);
+        updatePanel(EditorManager.getCurrentFullEditor());
     }
     
     /**
@@ -218,7 +243,7 @@ define(function (require, exports, module) {
         
         // Update panel when text changes
         editor.document.on("change", handleDocumentChange);
-        handleDocumentChange(null, editor.document);  // initial update (which sets panel size too)
+        handleDocumentChange(null, editor.document);  // initial update
         
         currentEditor = editor;
     }
@@ -238,11 +263,12 @@ define(function (require, exports, module) {
             // Inject panel into UI
             // TODO: use PanelManager to create top panel, once possible
             $("#editor-holder").before($svgPanel);
+            needsWorkspaceLayout = true;
             
         } else if ($svgPanel.is(":hidden")) {
             $svgPanel.show();
+            needsWorkspaceLayout = true;
         }
-        // we don't call resizeEditor() in either case, since it's guaranteed to be called below
         
         attachToEditor(editor);
     }
