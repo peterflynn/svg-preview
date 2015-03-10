@@ -36,22 +36,6 @@ define(function (require, exports, module) {
     // Extension's own modules
     var XMLPathFinder           = require("XMLPathFinder");
     
-    // Conversion factor for all CSS length units (other than percentage / viewport).  
-    // Just for estimation -- Makes assumptions about font metrics.
-    var unitsToPixels = {
-        cm : (96 / 2.54),
-        mm : (96 / 25.4),
-        "in" : 96,
-        px : 1,
-        pt : 96 / 72,
-        pc : 96 / 12,
-        em : 16,
-        ex : 8,
-        ch : 8,
-        rem : 16
-    };
-    
-    
     // TODO:
     //  - source->image linkage -- blink element in SVG (if Live Highlight is toggled on)
     //      - blink element's fill red/normal/red/normal a few times when cursor enters its text bounds
@@ -74,6 +58,30 @@ define(function (require, exports, module) {
     var currentState;
     
     
+    function attrToPx(attrValue) {
+        // Conversion factor for all CSS length units (other than percentage / viewport).
+        // Just for estimation -- Makes assumptions about font metrics.
+        var unitsToPixels = {
+            cm : (96 / 2.54),
+            mm : (96 / 25.4),
+            "in" : 96,
+            px : 1,
+            pt : 96 / 72,
+            pc : 96 / 12,
+            em : 16,
+            ex : 8,
+            ch : 8,
+            rem : 16
+        };
+        var number = parseFloat(attrValue);
+        var unit = attrValue.match(/[a-z%]+/);
+        if (unit) {
+            // If unit not supported, this yields NaN which is fasly, so value is ignored below
+            number *= unitsToPixels[unit[0]];
+        }
+        return number;
+    }
+    
     function setPanelHeight(height) {
         if (height !== $svgPanel.lastHeight || needsWorkspaceLayout) {
             $svgPanel.height(height);
@@ -85,36 +93,27 @@ define(function (require, exports, module) {
     }
     
     function updateSize($svgParent, $svgRoot) {
-        // Get size of the SVG image (which is always explicitly specified on root tag)
-        // First option: Use explicit height and width (with units!) from file
-        // if either is not available, or if they use percentages, then
-        // Second option: Use viewBox width and height (in pixels) 
-        //                scaling by aspect ratio if one of width *or* height specified
-        // Third option: Use HTML5 default size (300px x 150px)
-        var svgWidth, svgHeight, unit;
+        // Get "natural" size of the SVG image, which is explicitly specified on the root tag:
+        // 1) If width/height fully specified, that is the intended size. (If viewBox also specified
+        //    with different size, the file effectively has a top-level scale factor).
+        // 2) If viewBox specified with no width/height, assume that's the intended size (though
+        //    browsers generally jump to 100% in this case).
+        // 3) If viewBox specified and ONE of width/height specified, pick the other one to match the
+        //    viewBox's aspect ratio (FF does this, but not Chrome).
+        // 4) If no viewBox and width/height not fully specified, default missing dimension(s) to 200.
+        var svgWidth, svgHeight;
         var svgWidthAttr  = $svgRoot.attr("width");
         var svgHeightAttr = $svgRoot.attr("height");
-        var viewBoxAttr   = $svgRoot[0].getAttribute("viewBox"); 
-                            // jQ can't read this attr - see below
+        var viewBoxAttr   = $svgRoot[0].getAttribute("viewBox");  // jQ can't read this attr - see below
+        
         if (svgWidthAttr) {
-            svgWidth = parseFloat(svgWidthAttr);
-            unit = svgWidthAttr.match(/[a-z%]+/);
-            if (unit) {
-                //Multiply by unit value in pixels.
-                //Will result in NaN if unit not supported,
-                //causing a fall-through to another sizing option
-                svgWidth *= unitsToPixels[ unit[0] ];
-            }
+            svgWidth = attrToPx(svgWidthAttr);
         }
         if (svgHeightAttr) {
-            svgHeight = parseFloat(svgHeightAttr);
-            unit = svgHeightAttr.match(/[a-z%]+/);
-            if (unit) {
-                svgHeight *= unitsToPixels[ unit[0] ];
-            }            
+            svgHeight = attrToPx(svgHeightAttr);
         }
-        if ( (!(svgWidth && svgHeight)) && viewBoxAttr) {
-            var bounds = viewBoxAttr.split(/[ ,]+/).forEach(parseFloat);
+        if (viewBoxAttr) {
+            var bounds = viewBoxAttr.split(/[ ,]+/).map(parseFloat);
             if (!svgWidth) {
                 svgWidth = svgHeight ? svgHeight * bounds[2] / bounds[3]
                             : bounds[2];
@@ -123,13 +122,13 @@ define(function (require, exports, module) {
                 svgHeight = svgWidth ? svgWidth * bounds[3] / bounds[2]
                             : bounds[3];
             }
-        } 
-        // If either has not been defined, or is zero, set defaults:
-        svgWidth  = svgWidth  || 300;   
-        svgHeight = svgHeight || 150;
+        }
+        // If either has not been defined, or is zero or NaN, use defaults
+        svgWidth  = svgWidth  || 200;
+        svgHeight = svgHeight || 200;
         
         
-        // Specify actual width consistent with zoom factor
+        // Set actual display size consistent with zoom factor
         var viewWidth = svgWidth * currentState.zoomFactor;
         var viewHeight = svgHeight * currentState.zoomFactor;
 
@@ -144,9 +143,9 @@ define(function (require, exports, module) {
         
         $(".svg-tb-label", $svgPanel).text((viewWidth / svgWidth) * 100 + "%");
         
-        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 resolved wontfix: "we don't support SVG")
+        // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
         if (!viewBoxAttr) {
-            //create a viewBox to allow preview scaling
+            // Ensure we always have a viewBox, so our zoom scales instead of just growing the crop region
             $svgRoot[0].setAttribute("viewBox", "0 0 " + svgWidth + " " + svgHeight);
         }
         $svgRoot.attr("width", viewWidth);
