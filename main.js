@@ -82,6 +82,10 @@ define(function (require, exports, module) {
         return number;
     }
     
+    function limitDecimals(num, nDecimals) {
+        return parseFloat(num.toFixed(nDecimals));
+    }
+    
     function setPanelHeight(height) {
         if (height !== $svgPanel.lastHeight || needsWorkspaceLayout) {
             $svgPanel.height(height);
@@ -132,8 +136,8 @@ define(function (require, exports, module) {
         var viewWidth = svgWidth * currentState.zoomFactor;
         var viewHeight = svgHeight * currentState.zoomFactor;
 
-        // Clip to max of 2/3 window ht
-        var maxHeight = $(".content").height() * 2 / 3;
+        // Clip to max of 3/4 window ht
+        var maxHeight = $(".content").height() * 3 / 4;
         if (viewHeight > maxHeight) {
             viewHeight = maxHeight;
             viewWidth = maxHeight * svgWidth / svgHeight;
@@ -141,7 +145,7 @@ define(function (require, exports, module) {
         $(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
         $(".svg-tb-button.zoomin-icon", $svgPanel).toggleClass("disabled", viewHeight * 2 > maxHeight);
         
-        $(".svg-tb-label", $svgPanel).text((viewWidth / svgWidth) * 100 + "%");
+        $(".svg-tb-label", $svgPanel).text(limitDecimals((viewWidth / svgWidth) * 100, 2) + "%");
         
         // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
         if (!viewBoxAttr) {

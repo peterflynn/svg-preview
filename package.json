@@ -3,7 +3,7 @@
     "title": "SVG Preview",
     "homepage": "https://github.com/peterflynn/svg-preview",
     "author": "Peter Flynn",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "engines": { "brackets": ">=1.1" },
-    "description": "Live preview SVG files in an inline panel while you edit them. Click in SVG to select corresponding code."
+    "description": "Live preview SVG files in an inline panel while you edit them. Click in SVG to jump to corresponding code."
 }
