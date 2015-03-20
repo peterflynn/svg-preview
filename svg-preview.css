@@ -1,5 +1,8 @@
 .svg-panel {
     position: relative; /* positioning context for shadows */
+	float:	right;
+	width:	50%;
+	height:	100%;
 }
 .svg-panel .shadow.top {
     top: 29px; /* place below toolbar */

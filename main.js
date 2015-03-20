@@ -157,10 +157,10 @@ define(function (require, exports, module) {
         
         
         var desiredPanelHeight = $(".svg-toolbar", $svgPanel).outerHeight() + viewHeight + (15 * 2);
-        setPanelHeight(desiredPanelHeight);
+        //setPanelHeight(desiredPanelHeight);
         
-        $svgParent.width(viewWidth);
-        $svgParent.height(viewHeight);
+        //$svgParent.width(viewWidth);
+        //$svgParent.height(viewHeight);
     }
     
     /**
@@ -266,7 +266,7 @@ define(function (require, exports, module) {
     
     function createSVGPanel() {
         // Create panel contents
-        $svgPanel = $("<div class='svg-panel inline-widget no-focus'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
+        $svgPanel = $("<div id='svg-preview' class='svg-panel inline-widget no-focus'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
         $svgPanel.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
         var $svgToolbar = $(".svg-toolbar", $svgPanel);
         populateToolbar($svgToolbar);
@@ -315,10 +315,12 @@ define(function (require, exports, module) {
             
             // Inject panel into UI
             // TODO: use PanelManager to create top panel, once possible
+			$("#editor-holder").css('width', "50%");
             $("#editor-holder").before($svgPanel);
             needsWorkspaceLayout = true;
             
         } else if ($svgPanel.is(":hidden")) {
+			$("#editor-holder").css('width', "50%");
             $svgPanel.show();
             needsWorkspaceLayout = true;
         }
@@ -328,6 +330,7 @@ define(function (require, exports, module) {
     
     function hideSVGPanel() {
         if ($svgPanel && $svgPanel.is(":visible")) {
+			$("#editor-holder").css('width', "100%");
             $svgPanel.hide();
             WorkspaceManager.recomputeLayout();
         }
