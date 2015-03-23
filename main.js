@@ -56,6 +56,8 @@ define(function (require, exports, module) {
     /** State of the panel for the currently viewed Document, or null if panel not currently shown
      *  @type {?{zoomFactor:number}} */
     var currentState;
+	
+	var vertSplit = true;
     
     
     function attrToPx(attrValue) {
@@ -84,7 +86,7 @@ define(function (require, exports, module) {
     
     function limitDecimals(num, nDecimals) {
         return parseFloat(num.toFixed(nDecimals));
-    }
+	}
     
     function setPanelHeight(height) {
         if (height !== $svgPanel.lastHeight || needsWorkspaceLayout) {
@@ -142,10 +144,20 @@ define(function (require, exports, module) {
             viewHeight = maxHeight;
             viewWidth = maxHeight * svgWidth / svgHeight;
         }
-        $(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
+        //$(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
         $(".svg-tb-button.zoomin-icon", $svgPanel).toggleClass("disabled", viewHeight * 2 > maxHeight);
         
         $(".svg-tb-label", $svgPanel).text(limitDecimals((viewWidth / svgWidth) * 100, 2) + "%");
+		
+		if( vertSplit ) {
+			$('.svg-panel').css({
+				"width":	"50%",
+				"height":	"100%"
+			});
+			
+			viewWidth = "95%";
+			//viewHeight ="95%";
+		}
         
         // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
         if (!viewBoxAttr) {
@@ -157,10 +169,10 @@ define(function (require, exports, module) {
         
         
         var desiredPanelHeight = $(".svg-toolbar", $svgPanel).outerHeight() + viewHeight + (15 * 2);
-        //setPanelHeight(desiredPanelHeight);
+        if(! vertSplit ) setPanelHeight(desiredPanelHeight);
         
-        //$svgParent.width(viewWidth);
-        //$svgParent.height(viewHeight);
+        $svgParent.width(viewWidth); 
+        $svgParent.height(viewHeight); 
     }
     
     /**
@@ -293,6 +305,7 @@ define(function (require, exports, module) {
             };
         }
         currentState = editor.svgPanelState;
+		currentState.zoomFactor = 0.5;
         
         // Update panel when text changes
         editor.document.on("change", handleDocumentChange);
@@ -315,12 +328,12 @@ define(function (require, exports, module) {
             
             // Inject panel into UI
             // TODO: use PanelManager to create top panel, once possible
-			$("#editor-holder").css('width', "50%");
+			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $("#editor-holder").before($svgPanel);
             needsWorkspaceLayout = true;
             
         } else if ($svgPanel.is(":hidden")) {
-			$("#editor-holder").css('width', "50%");
+			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $svgPanel.show();
             needsWorkspaceLayout = true;
         }
