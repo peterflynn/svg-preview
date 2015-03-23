@@ -58,7 +58,7 @@ define(function (require, exports, module) {
      *  @type {?{zoomFactor:number}} */
     var currentState;
 	
-	var vertSplit = true,
+	var vertSplit = false,
 		previewActive = false;
     
     
@@ -153,6 +153,7 @@ define(function (require, exports, module) {
 		
 		if( vertSplit ) {
 			$('.svg-panel').css({
+				"float":	"right",
 				"width":	"50%",
 				"height":	"100%"
 			});
@@ -345,10 +346,9 @@ define(function (require, exports, module) {
 		$icon.addClass("active")
 			.unbind("click")
 			.on("click", function(){
+				previewActive = false;
 				hideSVGPanel(editor);
 			});
-		
-		previewActive = true;
     }
     
     function hideSVGPanel(editor) {
@@ -360,10 +360,10 @@ define(function (require, exports, module) {
 			$icon.removeClass("active")
 				.unbind("click")
 				.on("click", function(){
+					previewActive = true;
 					showSVGPanel(editor);
 				});
         }
-		previewActive = false;
     }
     
     /**
@@ -379,6 +379,7 @@ define(function (require, exports, module) {
 					$icon.removeClass("active")
 					.unbind("click")
 					.on("click", function(){
+						previewActive = true;
 						showSVGPanel(newEditor);
 					});
 				}
