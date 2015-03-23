@@ -45,7 +45,8 @@ define(function (require, exports, module) {
      * Preview panel that appears above the editor area. Lazily created, so may be null if never shown yet.
      * @type {?jQuery}
      */
-    var $svgPanel;
+    var $svgPanel,
+		$icon;
     
     /** @type {boolean}  True if panel has just been shown/hidden */
     var needsWorkspaceLayout;
@@ -56,6 +57,9 @@ define(function (require, exports, module) {
     /** State of the panel for the currently viewed Document, or null if panel not currently shown
      *  @type {?{zoomFactor:number}} */
     var currentState;
+	
+	var vertSplit = false,
+		previewActive = false;
     
     
     function attrToPx(attrValue) {
@@ -84,7 +88,7 @@ define(function (require, exports, module) {
     
     function limitDecimals(num, nDecimals) {
         return parseFloat(num.toFixed(nDecimals));
-    }
+	}
     
     function setPanelHeight(height) {
         if (height !== $svgPanel.lastHeight || needsWorkspaceLayout) {
@@ -137,15 +141,26 @@ define(function (require, exports, module) {
         var viewHeight = svgHeight * currentState.zoomFactor;
 
         // Clip to max of 3/4 window ht
-        var maxHeight = $(".content").height() * 3 / 4;
+        var maxHeight = ( vertSplit )? $(".content").height() : $(".content").height() * 3 / 4;
         if (viewHeight > maxHeight) {
             viewHeight = maxHeight;
             viewWidth = maxHeight * svgWidth / svgHeight;
         }
-        $(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
+        //$(".svg-tb-button.zoom11-icon", $svgPanel).toggleClass("disabled", svgHeight > maxHeight);
         $(".svg-tb-button.zoomin-icon", $svgPanel).toggleClass("disabled", viewHeight * 2 > maxHeight);
         
         $(".svg-tb-label", $svgPanel).text(limitDecimals((viewWidth / svgWidth) * 100, 2) + "%");
+		
+		if( vertSplit ) {
+			$('.svg-panel').css({
+				"float":	"right",
+				"width":	"50%",
+				"height":	"100%"
+			});
+			
+			viewWidth = "95%";
+			//viewHeight ="95%";
+		}
         
         // jQ auto lowercases the attr name, making it ignored (http://bugs.jquery.com/ticket/11166 wontfix: "we don't support SVG")
         if (!viewBoxAttr) {
@@ -157,10 +172,10 @@ define(function (require, exports, module) {
         
         
         var desiredPanelHeight = $(".svg-toolbar", $svgPanel).outerHeight() + viewHeight + (15 * 2);
-        setPanelHeight(desiredPanelHeight);
+        if(! vertSplit ) setPanelHeight(desiredPanelHeight);
         
-        $svgParent.width(viewWidth);
-        $svgParent.height(viewHeight);
+        $svgParent.width(viewWidth); 
+        $svgParent.height(viewHeight); 
     }
     
     /**
@@ -266,7 +281,7 @@ define(function (require, exports, module) {
     
     function createSVGPanel() {
         // Create panel contents
-        $svgPanel = $("<div class='svg-panel inline-widget no-focus'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
+        $svgPanel = $("<div id='svg-preview' class='svg-panel inline-widget no-focus'><div class='shadow top'></div><div class='shadow bottom'></div></div>");
         $svgPanel.append("<div class='svg-toolbar'></div><div class='svg-preview checker' style='margin: 15px'></div>");
         var $svgToolbar = $(".svg-toolbar", $svgPanel);
         populateToolbar($svgToolbar);
@@ -293,6 +308,7 @@ define(function (require, exports, module) {
             };
         }
         currentState = editor.svgPanelState;
+		currentState.zoomFactor = 0.5;
         
         // Update panel when text changes
         editor.document.on("change", handleDocumentChange);
@@ -315,21 +331,38 @@ define(function (require, exports, module) {
             
             // Inject panel into UI
             // TODO: use PanelManager to create top panel, once possible
+			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $("#editor-holder").before($svgPanel);
             needsWorkspaceLayout = true;
-            
+			
         } else if ($svgPanel.is(":hidden")) {
+			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $svgPanel.show();
             needsWorkspaceLayout = true;
         }
         
-        attachToEditor(editor);
+        	attachToEditor(editor);
+		
+		$icon.addClass("active")
+			.unbind("click")
+			.on("click", function(){
+				previewActive = false;
+				hideSVGPanel(editor);
+			});
     }
     
-    function hideSVGPanel() {
+    function hideSVGPanel(editor) {
         if ($svgPanel && $svgPanel.is(":visible")) {
+			$("#editor-holder").css('width', "100%");
             $svgPanel.hide();
             WorkspaceManager.recomputeLayout();
+		
+			$icon.removeClass("active")
+				.unbind("click")
+				.on("click", function(){
+					previewActive = true;
+					showSVGPanel(editor);
+				});
         }
     }
     
@@ -341,9 +374,19 @@ define(function (require, exports, module) {
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
             if (newEditor.document.getLanguage().getId() === "svg") {
-                showSVGPanel(newEditor);
+                if( previewActive ) showSVGPanel(newEditor);
+				else {
+					$icon.removeClass("active")
+					.unbind("click")
+					.on("click", function(){
+						previewActive = true;
+						showSVGPanel(newEditor);
+					});
+				}
+				$icon.css({display: "block"});
             } else {
                 hideSVGPanel();
+				$icon.css({display: "none"});
             }
         } else {
             hideSVGPanel();
@@ -359,4 +402,15 @@ define(function (require, exports, module) {
             // Don't pick up initially visible editor until our stylesheet is loaded
             handleCurrentEditorChange();
         });
+	
+    // Add toolbar icon 
+    $icon = $("<a>")
+        .attr({
+            id: "svg-preview-icon",
+            href: "#"
+        })
+        .css({
+            display: "none"
+        })
+        .appendTo($("#main-toolbar .buttons"));
 });

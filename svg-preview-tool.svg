@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<svg width="24.000000000000004" height="48.00000000000001" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <title>SVG Preview</title>
+
+ <g>
+  <g id="svg-preview">
+   <rect ry="2" rx="2" id="svg_1" height="12.147034" width="17.886841" y="5.938614" x="3.196739" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="null" fill="#BBBBBB"/>
+   <text transform="matrix(0.999758, 0, 0, 1, -20.6192, 0)" xml:space="preserve" text-anchor="middle" font-family="sans-serif" font-size="8" id="svg_3" y="15.037766" x="32.433553" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="0" fill="#333">SVG</text>
+  </g>
+  <g id="svg-preview-on">
+   <rect ry="2" rx="2" height="12.147034" width="17.886841" y="29.83223" x="2.929771" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="null" fill="#007fff"/>
+   <text transform="matrix(0.999758, 0, 0, 1, -20.6192, 0)" xml:space="preserve" text-anchor="middle" font-family="sans-serif" font-size="8" y="38.931381" x="32.300037" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="0" fill="#FFF">SVG</text>
+  </g>
+ </g>
+</svg>

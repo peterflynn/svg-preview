@@ -50,3 +50,12 @@
 .zoomin-icon    { background-position: 0 0; }
 .zoomout-icon   { background-position: 0 -20px; }
 .zoom11-icon    { background-position: 0 -40px; }
+
+/* Toolbar icon */
+#svg-preview-icon {
+    background-image: url(svg-preview-tool.svg);
+}
+
+#svg-preview-icon.active {
+    background-position: 0 -24px !important;
+}
