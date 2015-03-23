@@ -59,7 +59,7 @@ define(function (require, exports, module) {
     var currentState;
 	
 	var vertSplit = true,
-		visibility = false;
+		previewActive = false;
     
     
     function attrToPx(attrValue) {
@@ -141,7 +141,7 @@ define(function (require, exports, module) {
         var viewHeight = svgHeight * currentState.zoomFactor;
 
         // Clip to max of 3/4 window ht
-        var maxHeight = $(".content").height() * 3 / 4;
+        var maxHeight = ( vertSplit )? $(".content").height() : $(".content").height() * 3 / 4;
         if (viewHeight > maxHeight) {
             viewHeight = maxHeight;
             viewWidth = maxHeight * svgWidth / svgHeight;
@@ -348,7 +348,7 @@ define(function (require, exports, module) {
 				hideSVGPanel(editor);
 			});
 		
-		visibility = true;
+		previewActive = true;
     }
     
     function hideSVGPanel(editor) {
@@ -363,7 +363,7 @@ define(function (require, exports, module) {
 					showSVGPanel(editor);
 				});
         }
-		visibility = false;
+		previewActive = false;
     }
     
     /**
@@ -374,7 +374,7 @@ define(function (require, exports, module) {
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
             if (newEditor.document.getLanguage().getId() === "svg") {
-                if( visibility ) showSVGPanel(newEditor);
+                if( previewActive ) showSVGPanel(newEditor);
 				else {
 					$icon.removeClass("active")
 					.unbind("click")
