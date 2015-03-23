@@ -45,7 +45,8 @@ define(function (require, exports, module) {
      * Preview panel that appears above the editor area. Lazily created, so may be null if never shown yet.
      * @type {?jQuery}
      */
-    var $svgPanel;
+    var $svgPanel,
+		$icon;
     
     /** @type {boolean}  True if panel has just been shown/hidden */
     var needsWorkspaceLayout;
@@ -57,7 +58,8 @@ define(function (require, exports, module) {
      *  @type {?{zoomFactor:number}} */
     var currentState;
 	
-	var vertSplit = true;
+	var vertSplit = true,
+		visibility = false;
     
     
     function attrToPx(attrValue) {
@@ -331,22 +333,37 @@ define(function (require, exports, module) {
 			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $("#editor-holder").before($svgPanel);
             needsWorkspaceLayout = true;
-            
+			
         } else if ($svgPanel.is(":hidden")) {
 			if( vertSplit ) $("#editor-holder").css('width', "50%");
             $svgPanel.show();
             needsWorkspaceLayout = true;
         }
         
-        attachToEditor(editor);
+        	attachToEditor(editor);
+		
+		$icon.addClass("active")
+			.unbind("click")
+			.on("click", function(){
+				hideSVGPanel(editor);
+			});
+		
+		visibility = true;
     }
     
-    function hideSVGPanel() {
+    function hideSVGPanel(editor) {
         if ($svgPanel && $svgPanel.is(":visible")) {
 			$("#editor-holder").css('width', "100%");
             $svgPanel.hide();
             WorkspaceManager.recomputeLayout();
+		
+			$icon.removeClass("active")
+				.unbind("click")
+				.on("click", function(){
+					showSVGPanel(editor);
+				});
         }
+		visibility = false;
     }
     
     /**
@@ -357,9 +374,18 @@ define(function (require, exports, module) {
         var newEditor = EditorManager.getCurrentFullEditor();
         if (newEditor) {
             if (newEditor.document.getLanguage().getId() === "svg") {
-                showSVGPanel(newEditor);
+                if( visibility ) showSVGPanel(newEditor);
+				else {
+					$icon.removeClass("active")
+					.unbind("click")
+					.on("click", function(){
+						showSVGPanel(newEditor);
+					});
+				}
+				$icon.css({display: "block"});
             } else {
                 hideSVGPanel();
+				$icon.css({display: "none"});
             }
         } else {
             hideSVGPanel();
@@ -375,4 +401,15 @@ define(function (require, exports, module) {
             // Don't pick up initially visible editor until our stylesheet is loaded
             handleCurrentEditorChange();
         });
+	
+    // Add toolbar icon 
+    $icon = $("<a>")
+        .attr({
+            id: "svg-preview-icon",
+            href: "#"
+        })
+        .css({
+            display: "none"
+        })
+        .appendTo($("#main-toolbar .buttons"));
 });
